@@ -1,0 +1,39 @@
+
+li {
+	list-style-type: none;
+}
+ul {
+	margin: 0;
+	padding: 0;
+}
+
+#toolbar {
+	position: absolute;
+	top: 0;
+
+	background: rgb(68, 68, 68);
+	border: 1px solid rgb(80, 80, 80);
+}
+
+#toolbar .menu {
+	width: 26px;
+	height: 26px;
+	margin: 2px;
+	padding: 2px;
+	text-align: center;
+	line-height: 35px;
+}
+#toolbar .menu.selected {
+	background: #333;
+}
+#toolbar .menu img {
+	max-width: 22px;
+}
+
+#toolbar.align-left {
+	left: 0;
+}
+#toolbar.align-left .panel {
+	left: 0;
+}
+
