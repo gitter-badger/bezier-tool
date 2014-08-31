@@ -22,6 +22,7 @@ class BezierAction
 	events: ->
 		@canvas.on 'mousedown', (e) =>
 			[x, y] = [e.offsetX, e.offsetY]
+			@mousedown = true
 
 			switch @state
 				when @STATE_DEFAULT
@@ -37,6 +38,7 @@ class BezierAction
 
 		@canvas.on 'mouseup', (e) =>
 			[x, y] = [e.offsetX, e.offsetY]
+			@mousedown = false
 
 			if @STATE_ANCHORED
 				@bezier.determine(x, y)
@@ -56,11 +58,17 @@ class BezierAction
 
 			@canvas.trigger 'bezier:clear' if @state >= @STATE_CLICKED
 
-			if @state is @STATE_CLICKED
-				@bezier.anchorMove(x, y)
+			if @mousedown && @bezier.cpFixed
+				if !@bezier.isBezier
+					@bezier.toBezier()
+				@bezier.cp2Move(x, y)
 
-			if @state is @STATE_ANCHORED
-				@bezier.cpMove(x, y)
+			else
+				if @state is @STATE_CLICKED
+					@bezier.anchorMove(x, y)
+
+				if @state is @STATE_ANCHORED
+					@bezier.cpMove(x, y)
 
 		$(window).on 'keydown', (e) =>
 			if e.keyCode is @KEY_CODE_ESC
@@ -117,6 +125,8 @@ class QuadraticCurve extends Shape
 		@eAnchor = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
 		@cp      = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
 		@cLine   = new Line(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
+		@cp2     = null
+		@c2Line  = null
 		@cpFixed = false
 
 	click: (x, y) ->
@@ -143,6 +153,9 @@ class QuadraticCurve extends Shape
 		@cp.remove()
 		@sAnchor.remove()
 		@eAnchor.remove()
+		@cp2.remove() if @cp2
+		@c2Line.remove() if @c2Line
+		@cLine.remove() if @cLine
 
 	anchorMove: (x, y) ->
 		@eAnchor.x = x
@@ -162,8 +175,34 @@ class QuadraticCurve extends Shape
 		@cLine.end.x   = @cp.x
 		@cLine.end.y   = @cp.y
 
+	# FIXME: cpMoveとかぶってる、共通化
+	cp2Move: (x, y) ->
+		sub = {x: @eAnchor.x - x, y:@eAnchor.y - y}
+		@cp2.x = x - (sub.x * 2) * -1
+		@cp2.y = y - (sub.y * 2) * -1
+
+		@c2Line.start.x = x
+		@c2Line.start.y = y
+		@c2Line.end.x   = @cp2.x
+		@c2Line.end.y   = @cp2.y
+
 	connect: (bezier) ->
 		bezier.click(@eAnchor.x, @eAnchor.y)
+
+	toBezier: ->
+		@isBezier = true
+		@cp2    = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
+		@c2Line = new Line(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
+
+		# FIXME: ここゴリ押し
+		@cLine.start.x = @sAnchor.x
+		@cLine.start.y = @sAnchor.y
+		@cLine.end.x   = @cp.x
+		@cLine.end.y   = @cp.y
+
+		@cLine.add()
+		@cp2.add()
+		@c2Line.add()
 
 	remove: ->
 		@determine()
@@ -174,7 +213,10 @@ class QuadraticCurve extends Shape
 		@ctx.beginPath()
 		@ctx.strokeStyle = @color
 		@ctx.moveTo @sAnchor.x, @sAnchor.y
-		@ctx.quadraticCurveTo @cp.x, @cp.y, @eAnchor.x, @eAnchor.y
+		if @cp2
+			@ctx.bezierCurveTo @cp.x, @cp.y, @cp2.x, @cp2.y, @eAnchor.x, @eAnchor.y
+		else
+			@ctx.quadraticCurveTo @cp.x, @cp.y, @eAnchor.x, @eAnchor.y
 		@ctx.stroke()
 
 class BackGroundImage extends Shape
