@@ -1,6 +1,6 @@
 
-# class Bezier
-	# COLOR_
+class Illust_ator
+	COLOR_ASSISTANCE: 'rgb(86, 111, 255)'
 
 # ================================
 # Actions
@@ -35,7 +35,12 @@ class BezierAction
 
 				when @STATE_ANCHORED
 					@bezier.determine(x, y)
-					@state = @STATE_DEFAULT
+					@state = @STATE_CLICKED
+
+					bezier = new QuadraticCurve(@canvas, @ctx)
+					@bezier.connect bezier
+					@bezier = bezier
+
 
 			@canvas.trigger 'bezier:clear'
 
@@ -52,10 +57,9 @@ class BezierAction
 
 		$(window).on 'keydown', (e) =>
 			if e.keyCode is @KEY_CODE_ESC
-				@reset()
-				@bezier.remove()
-				@init()
 				@state = @STATE_DEFAULT
+				@bezier.remove()
+				@canvas.trigger 'bezier:clear'
 
 
 # ================================
@@ -102,10 +106,10 @@ class Line extends Shape
 
 class QuadraticCurve extends Shape
 	constructor: (@canvas, @ctx, @color = '#000') ->
-		@sAnchor = new Dot(@canvas, @ctx)
-		@eAnchor = new Dot(@canvas, @ctx)
-		@cp      = new Dot(@canvas, @ctx)
-		@sLine   = new Line(@canvas, @ctx)
+		@sAnchor = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
+		@eAnchor = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
+		@cp      = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
+		@sLine   = new Line(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
 		@cLine   = new Line(@canvas, @ctx)
 
 	click: (x, y) ->
@@ -126,9 +130,7 @@ class QuadraticCurve extends Shape
 		@cLine.add()
 		@add()
 
-	determine: (x, y) ->
-		# [oldX, oldY] = [@eAnchor.x, @eAnchor.y]
-
+	determine: ->
 		@cLine.remove()
 		@cp.remove()
 		@sAnchor.remove()
@@ -137,8 +139,6 @@ class QuadraticCurve extends Shape
 	anchorMove: (x, y) ->
 		@sLine.end.x = x
 		@sLine.end.y = y
-
-		console.log @sAnchor.x, @sAnchor.y, @eAnchor.x, @eAnchor.y
 
 	cpMove: (x, y) ->
 		sub = {x: @eAnchor.x - x, y:@eAnchor.y - y}
@@ -149,6 +149,14 @@ class QuadraticCurve extends Shape
 		@cLine.start.y = y
 		@cLine.end.x   = @cp.x
 		@cLine.end.y   = @cp.y
+
+	connect: (bezier) ->
+		bezier.click(@eAnchor.x, @eAnchor.y)
+
+	remove: ->
+		@determine()
+		@sLine.remove()
+		super
 
 	render: ->
 		@ctx.beginPath()
@@ -190,7 +198,7 @@ $canvas.on 'bezier:shape:add', (e, shape) ->
 
 $canvas.on 'bezier:shape:remove', (e, shape) ->
 	idx = paths.indexOf shape
-	paths.splice(idx, 1)
+	paths.splice(idx, 1) if idx >= 0
 
 $canvas.on 'bezier:clear', ->
 	ctx.clearRect(0, 0, $canvas.width(), $canvas.height())
