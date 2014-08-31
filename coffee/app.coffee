@@ -1,6 +1,6 @@
 
 class Illust_ator
-	COLOR_ASSISTANCE: 'rgb(86, 111, 255)'
+	@COLOR_ASSISTANCE: 'rgb(86, 111, 255)'
 
 # ================================
 # Actions
@@ -33,16 +33,23 @@ class BezierAction
 					@bezier.anchor(x, y)
 					@state = @STATE_ANCHORED
 
-				when @STATE_ANCHORED
-					@bezier.determine(x, y)
-					@state = @STATE_CLICKED
-
-					bezier = new QuadraticCurve(@canvas, @ctx)
-					@bezier.connect bezier
-					@bezier = bezier
-
-
 			@canvas.trigger 'bezier:clear'
+
+		@canvas.on 'mouseup', (e) =>
+			[x, y] = [e.offsetX, e.offsetY]
+
+			if @STATE_ANCHORED
+				@bezier.determine(x, y)
+				@state = @STATE_CLICKED
+
+				bezier = new QuadraticCurve(@canvas, @ctx)
+				@bezier.connect bezier
+				@bezier = bezier
+
+			if (@bezier.eAnchor.x != x) || (@bezier.eAnchor.y != y)
+				@bezier.cpFixed = true
+				@bezier.cp.x = x
+				@bezier.cp.y = y
 
 		@canvas.on 'mousemove', (e) =>
 			[x, y] = [e.offsetX, e.offsetY]
@@ -99,7 +106,7 @@ class Line extends Shape
 
 	render: ->
 		@ctx.beginPath()
-		@ctx.fillStyle = @color
+		@ctx.strokeStyle = @color
 		@ctx.moveTo @start.x, @start.y
 		@ctx.lineTo @end.x, @end.y
 		@ctx.stroke()
@@ -109,26 +116,27 @@ class QuadraticCurve extends Shape
 		@sAnchor = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
 		@eAnchor = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
 		@cp      = new Dot(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
-		@sLine   = new Line(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
-		@cLine   = new Line(@canvas, @ctx)
+		@cLine   = new Line(@canvas, @ctx, Illust_ator.COLOR_ASSISTANCE)
+		@cpFixed = false
 
 	click: (x, y) ->
-		@sAnchor.x = @eAnchor.x = @sLine.start.x = @sLine.end.x = x
-		@sAnchor.y = @eAnchor.y = @sLine.start.y = @sLine.end.y = y
+		@sAnchor.x = @cp.x = @eAnchor.x = x
+		@sAnchor.y = @cp.y = @eAnchor.y = y
 
 		@sAnchor.add()
 		@eAnchor.add()
-		@sLine.add()
+		@add()
 
 	anchor: (x, y) ->
-		@sLine.remove()
+		@eAnchor.x = x
+		@eAnchor.y = y
 
-		@eAnchor.x = @cp.x = x
-		@eAnchor.y = @cp.y = y
+		if !@cpFixed
+			@cp.x = x
+			@cp.y = y
 
 		@cp.add()
 		@cLine.add()
-		@add()
 
 	determine: ->
 		@cLine.remove()
@@ -137,8 +145,12 @@ class QuadraticCurve extends Shape
 		@eAnchor.remove()
 
 	anchorMove: (x, y) ->
-		@sLine.end.x = x
-		@sLine.end.y = y
+		@eAnchor.x = x
+		@eAnchor.y = y
+
+		if !@cpFixed
+			@cp.x = x
+			@cp.y = y
 
 	cpMove: (x, y) ->
 		sub = {x: @eAnchor.x - x, y:@eAnchor.y - y}
@@ -155,12 +167,12 @@ class QuadraticCurve extends Shape
 
 	remove: ->
 		@determine()
-		@sLine.remove()
+		# @sLine.remove()
 		super
 
 	render: ->
 		@ctx.beginPath()
-		@ctx.fillStyle = @color
+		@ctx.strokeStyle = @color
 		@ctx.moveTo @sAnchor.x, @sAnchor.y
 		@ctx.quadraticCurveTo @cp.x, @cp.y, @eAnchor.x, @eAnchor.y
 		@ctx.stroke()
