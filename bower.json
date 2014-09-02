@@ -1,0 +1,12 @@
+{
+  "name": "bezier-tool",
+  "version": "0.0.0",
+  "homepage": "https://github.com/Leko/bezier-tool",
+  "authors": [
+    "Leko <leko.noor@gmail.com>"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "Ink": "~3.0.5"
+  }
+}
