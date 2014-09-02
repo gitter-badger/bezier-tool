@@ -9,6 +9,7 @@
   "dependencies": {
     "Ink": "~3.0.5",
     "jquery": "~2.1.1",
-    "backbone": "~1.1.2"
+    "backbone": "~1.1.2",
+    "coffee-script": "~1.8.0"
   }
 }
