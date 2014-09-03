@@ -1,0 +1,5 @@
+
+/* overwride ink */
+.ink-navigation a {
+	white-space: nowrap;
+}
